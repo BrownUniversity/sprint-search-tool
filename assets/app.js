@@ -354,10 +354,6 @@ function createOpportunityCard(opportunity) {
   header.className = "program-header";
   header.style.setProperty("--program-main", program.mainColor);
   header.style.setProperty(
-    "--program-secondary",
-    program.secondaryColor || program.mainColor
-  );
-  header.style.setProperty(
     "--program-text",
     readableTextColor(program.mainColor)
   );

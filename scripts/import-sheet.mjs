@@ -46,15 +46,13 @@ try {
     "Link",
     "Field/Industry",
     "Keywords",
-    "Location",
-    "Last Updated"
+    "Location"
   ]);
 
   requireHeaders("Programs", programRows, [
     "Program ID",
     "Program Name",
     "Main Color",
-    "Secondary Color",
     "Program Link",
     "Active",
     "Filter Order"
@@ -280,8 +278,6 @@ function parsePrograms(rows) {
     const id = clean(row["Program ID"]);
     const name = clean(row["Program Name"]);
     const mainColor = clean(row["Main Color"]).toUpperCase();
-    const secondaryColor =
-      clean(row["Secondary Color"]).toUpperCase() || mainColor;
     const url = clean(row["Program Link"]);
     const active = parseBoolean(row.Active);
     const filterOrder =
@@ -314,15 +310,6 @@ function parsePrograms(rows) {
       );
     }
 
-    if (!isHexColor(secondaryColor)) {
-      addError(
-        "Programs",
-        rowNumber,
-        "Secondary Color",
-        `Expected a six-digit hex color; received "${secondaryColor}".`
-      );
-    }
-
     if (url && !isHttpsUrl(url)) {
       addError(
         "Programs",
@@ -336,7 +323,6 @@ function parsePrograms(rows) {
       id,
       name,
       mainColor,
-      secondaryColor,
       url,
       active,
       filterOrder
@@ -422,7 +408,6 @@ function parseOpportunities(rows, programMap) {
     const fields = splitList(row["Field/Industry"]);
     const keywords = splitList(row.Keywords);
     const locations = splitList(row.Location);
-    const lastUpdated = clean(row["Last Updated"]);
 
     requiredValue("Opportunities", rowNumber, "ID", id);
     requiredValue(
@@ -500,8 +485,7 @@ function parseOpportunities(rows, programMap) {
       url,
       fields,
       keywords,
-      locations,
-      lastUpdated
+      locations
     };
 
     opportunity.searchText = createSearchText(
