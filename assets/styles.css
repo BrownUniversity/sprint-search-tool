@@ -362,13 +362,7 @@ a:focus-visible {
   min-height: 4.25rem;
   padding: 0.8rem 1rem;
   color: var(--program-text, var(--white));
-  background:
-    linear-gradient(
-      125deg,
-      var(--program-main) 0%,
-      var(--program-main) 74%,
-      var(--program-secondary) 74%
-    );
+  background: var(--program-main);
 }
 
 .program-name {
