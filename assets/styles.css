@@ -65,9 +65,7 @@ a {
 .directory__header {
   padding: 2.5rem max(1.25rem, calc((100% - var(--content-width)) / 2));
   color: var(--white);
-  background:
-    linear-gradient(105deg, rgb(78 54 41 / 98%), rgb(78 54 41 / 88%)),
-    var(--brown);
+  background: var(--red);
 }
 
 .directory__header > div {
