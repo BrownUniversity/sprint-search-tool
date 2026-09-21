@@ -26,6 +26,7 @@ const elements = {
   loadMore: document.querySelector("#load-more"),
   loadAll: document.querySelector("#load-all"),
   locationFilter: document.querySelector("#location-filter"),
+  intro: document.querySelector("#intro"),
   cycleLabel: document.querySelector("#cycle-label"),
   programOverview: document.querySelector("#program-overview"),
   programOverviewLink: document.querySelector("#program-overview-link")
@@ -203,6 +204,22 @@ function buildFilters() {
       locations.map(location => ({ value: location, label: location }))
     );
   }
+
+  updateIntroCopy(locations.length > 0);
+}
+
+function updateIntroCopy(hasLocationFilter) {
+  const facets = ["program", "field", "keyword"];
+
+  if (hasLocationFilter) {
+    facets.push("location");
+  }
+
+  const lastFacet = facets.pop();
+
+  elements.intro.textContent =
+    "Search experiential learning opportunities by " +
+    `${facets.join(", ")}, or ${lastFacet}.`;
 }
 
 function renderFilterOptions(type, options) {
