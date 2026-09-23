@@ -4,7 +4,6 @@ import { parse } from "csv-parse/sync";
 
 import {
   clean,
-  normalize,
   splitList,
   parseBoolean,
   isHttpsUrl,
@@ -17,7 +16,6 @@ const SHEET_ID = "1ks63ew54RtEUyghnSu4DJIZTxqrikgkldc32qbmToyo";
 const urls = {
   opportunities: sheetCsvUrl("Opportunities"),
   programs: sheetCsvUrl("Programs"),
-  taxonomy: sheetCsvUrl("Taxonomy"),
   settings: sheetCsvUrl("Settings")
 };
 
@@ -28,12 +26,10 @@ try {
   const [
     opportunityRows,
     programRows,
-    taxonomyRows,
     settingsRows
   ] = await Promise.all([
     fetchSheet(urls.opportunities, "Opportunities"),
     fetchSheet(urls.programs, "Programs"),
-    fetchSheet(urls.taxonomy, "Taxonomy"),
     fetchSheet(urls.settings, "Settings")
   ]);
 
@@ -53,16 +49,7 @@ try {
     "Program ID",
     "Program Name",
     "Main Color",
-    "Program Link",
-    "Active",
-    "Filter Order"
-  ]);
-
-  requireHeaders("Taxonomy", taxonomyRows, [
-    "Type",
-    "Value",
-    "Active",
-    "Display Order"
+    "Program Link"
   ]);
 
   requireHeaders("Settings", settingsRows, [
@@ -72,11 +59,9 @@ try {
 
   const programs = parsePrograms(programRows);
   const programMap = new Map(programs.map(program => [program.id, program]));
-  const taxonomy = parseTaxonomy(taxonomyRows);
   const settings = parseSettings(settingsRows);
   const opportunities = parseOpportunities(opportunityRows, programMap);
 
-  validateTaxonomy(opportunities, taxonomy);
   validateProgramUsage(opportunities, programs);
 
   const output = {
@@ -85,8 +70,7 @@ try {
     opportunityCount: opportunities.length,
     settings,
     opportunities,
-    programs,
-    taxonomy
+    programs
   };
 
   await fs.mkdir("data", { recursive: true });
@@ -279,9 +263,6 @@ function parsePrograms(rows) {
     const name = clean(row["Program Name"]);
     const mainColor = clean(row["Main Color"]).toUpperCase();
     const url = clean(row["Program Link"]);
-    const active = parseBoolean(row.Active);
-    const filterOrder =
-      Number.parseInt(clean(row["Filter Order"]), 10) || 9999;
 
     if (!id && !name) {
       return;
@@ -323,9 +304,7 @@ function parsePrograms(rows) {
       id,
       name,
       mainColor,
-      url,
-      active,
-      filterOrder
+      url
     });
   });
 
@@ -334,59 +313,6 @@ function parsePrograms(rows) {
   }
 
   return programs;
-}
-
-function parseTaxonomy(rows) {
-  const taxonomy = [];
-
-  rows.forEach((row, index) => {
-    const rowNumber = index + 2;
-    const type = clean(row.Type);
-    const value = clean(row.Value);
-
-    if (!type && !value) {
-      return;
-    }
-
-    if (!["Field", "Location"].includes(type)) {
-      addWarning(
-        "Taxonomy",
-        rowNumber,
-        "Type",
-        `Unrecognized taxonomy type "${type}".`
-      );
-    }
-
-    if (!value) {
-      addWarning(
-        "Taxonomy",
-        rowNumber,
-        "Value",
-        "Taxonomy rows should have a value."
-      );
-
-      return;
-    }
-
-    taxonomy.push({
-      type,
-      value,
-      active: parseBoolean(row.Active),
-      displayOrder:
-        Number.parseInt(clean(row["Display Order"]), 10) || 9999
-    });
-  });
-
-  taxonomy.sort(
-    (left, right) =>
-      left.displayOrder - right.displayOrder ||
-      left.value.localeCompare(right.value, "en", {
-        sensitivity: "base",
-        numeric: true
-      })
-  );
-
-  return taxonomy;
 }
 
 function parseOpportunities(rows, programMap) {
@@ -459,13 +385,6 @@ function parseOpportunities(rows, programMap) {
         "Program ID",
         `Unknown Program ID "${programId}".`
       );
-    } else if (program && !program.active) {
-      addWarning(
-        "Opportunities",
-        rowNumber,
-        "Program ID",
-        `Opportunity uses inactive program "${program.name}".`
-      );
     }
 
     if (fields.length === 0 && keywords.length === 0) {
@@ -508,70 +427,19 @@ function parseOpportunities(rows, programMap) {
   return opportunities;
 }
 
-function validateTaxonomy(opportunities, taxonomy) {
-  const activeFields = new Set(
-    taxonomy
-      .filter(item => item.type === "Field" && item.active)
-      .map(item => normalize(item.value))
-  );
-
-  const activeLocations = new Set(
-    taxonomy
-      .filter(item => item.type === "Location" && item.active)
-      .map(item => normalize(item.value))
-  );
-
-  const unknownFields = new Set();
-  const unknownLocations = new Set();
-
-  for (const opportunity of opportunities) {
-    for (const field of opportunity.fields) {
-      if (activeFields.size > 0 && !activeFields.has(normalize(field))) {
-        unknownFields.add(field);
-      }
-    }
-
-    for (const location of opportunity.locations) {
-      if (
-        activeLocations.size > 0 &&
-        !activeLocations.has(normalize(location))
-      ) {
-        unknownLocations.add(location);
-      }
-    }
-  }
-
-  for (const field of unknownFields) {
-    addWarning(
-      "Opportunities",
-      null,
-      "Field/Industry",
-      `Field is not in the active taxonomy: "${field}".`
-    );
-  }
-
-  for (const location of unknownLocations) {
-    addWarning(
-      "Opportunities",
-      null,
-      "Location",
-      `Location is not in the active taxonomy: "${location}".`
-    );
-  }
-}
-
 function validateProgramUsage(opportunities, programs) {
   const usedProgramIds = new Set(
     opportunities.map(opportunity => opportunity.programId)
   );
 
   for (const program of programs) {
-    if (program.active && !usedProgramIds.has(program.id)) {
+    if (!usedProgramIds.has(program.id)) {
       addWarning(
         "Programs",
         null,
         "Program ID",
-        `Active program "${program.name}" has no published opportunities.`
+        `Program "${program.name}" has no published opportunities ` +
+          "and will not appear as a filter."
       );
     }
   }

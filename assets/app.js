@@ -150,42 +150,27 @@ function attachStaticListeners() {
 }
 
 function buildFilters() {
-  const { opportunities, programs, taxonomy } = state.directory;
+  const { opportunities, programs } = state.directory;
 
   const usedProgramIds = new Set(
     opportunities.map(opportunity => opportunity.programId)
   );
 
-  const activePrograms = programs
-    .filter(program => program.active && usedProgramIds.has(program.id))
-    .sort((left, right) =>
-      left.filterOrder - right.filterOrder ||
-      compareText(left.name, right.name)
-    );
+  const usedPrograms = programs
+    .filter(program => usedProgramIds.has(program.id))
+    .sort((left, right) => compareText(left.name, right.name));
 
-  const usedFields = uniqueSorted(
+  const fields = uniqueSorted(
     opportunities.flatMap(opportunity => opportunity.fields)
   );
 
-  const configuredFields = taxonomy
-    .filter(item => item.type === "Field" && item.active)
-    .map(item => item.value);
-
-  const fields = orderByTaxonomy(usedFields, configuredFields);
-
-  const usedLocations = uniqueSorted(
+  const locations = uniqueSorted(
     opportunities.flatMap(opportunity => opportunity.locations)
   );
 
-  const configuredLocations = taxonomy
-    .filter(item => item.type === "Location" && item.active)
-    .map(item => item.value);
-
-  const locations = orderByTaxonomy(usedLocations, configuredLocations);
-
   renderFilterOptions(
     "program",
-    activePrograms.map(program => ({
+    usedPrograms.map(program => ({
       value: program.id,
       label: program.name
     }))
@@ -524,24 +509,6 @@ function updateClearButton() {
 
 function resetVisibleCount() {
   state.visibleCount = INITIAL_BATCH_SIZE;
-}
-
-function orderByTaxonomy(usedValues, configuredValues) {
-  const usedMap = new Map(
-    usedValues.map(value => [normalizeText(value), value])
-  );
-
-  const configured = configuredValues.filter(value =>
-    usedMap.has(normalizeText(value))
-  );
-
-  const configuredKeys = new Set(configured.map(normalizeText));
-
-  const unconfigured = usedValues.filter(
-    value => !configuredKeys.has(normalizeText(value))
-  );
-
-  return [...configured, ...unconfigured];
 }
 
 function uniqueSorted(values) {

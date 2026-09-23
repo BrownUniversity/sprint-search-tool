@@ -5,12 +5,14 @@ opportunities.
 
 ## Architecture
 
-- Google Sheets is the editorial source for opportunities, programs,
-  taxonomy, and cycle-specific site settings.
+- Google Sheets is the editorial source for opportunities, programs, and
+  cycle-specific site settings.
 - GitHub Actions imports and validates the public read-only sheet.
 - GitHub Pages hosts the generated static application.
 - Search and filtering run entirely in the user's browser.
 - Opportunity order follows the source spreadsheet row order.
+- Filter options come from published opportunities and are listed
+  alphabetically.
 
 ## Local development
 
