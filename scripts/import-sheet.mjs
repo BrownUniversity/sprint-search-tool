@@ -13,10 +13,19 @@ import {
 
 const SHEET_ID = "1ks63ew54RtEUyghnSu4DJIZTxqrikgkldc32qbmToyo";
 
+// Tabs are addressed by gid (the number after "gid=" in the tab's URL), so
+// renaming a tab is safe but deleting and recreating one requires updating
+// its gid here.
+const SHEET_GIDS = {
+  opportunities: "0",
+  programs: "716082224",
+  settings: "1917967801"
+};
+
 const urls = {
-  opportunities: sheetCsvUrl("Opportunities"),
-  programs: sheetCsvUrl("Programs"),
-  settings: sheetCsvUrl("Settings")
+  opportunities: sheetCsvUrl(SHEET_GIDS.opportunities),
+  programs: sheetCsvUrl(SHEET_GIDS.programs),
+  settings: sheetCsvUrl(SHEET_GIDS.settings)
 };
 
 const errors = [];
@@ -102,10 +111,12 @@ try {
   process.exitCode = 1;
 }
 
-function sheetCsvUrl(sheetName) {
+// The export endpoint returns every row. The gviz endpoint used previously
+// omitted rows hidden by a filter applied in the sheet.
+function sheetCsvUrl(gid) {
   return (
-    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq` +
-    `?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export` +
+    `?format=csv&gid=${gid}`
   );
 }
 
@@ -119,7 +130,9 @@ async function fetchSheet(url, sheetName) {
 
   if (!response.ok) {
     throw new Error(
-      `${sheetName} could not be downloaded: HTTP ${response.status}.`
+      `${sheetName} could not be downloaded: HTTP ${response.status}. ` +
+        "Check that the spreadsheet is shared as \"Anyone with the link\" " +
+        "and that the tab's gid in SHEET_GIDS is current."
     );
   }
 
