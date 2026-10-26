@@ -13,6 +13,8 @@ opportunities.
 - Opportunity order follows the source spreadsheet row order.
 - Filter options come from published opportunities and are listed
   alphabetically.
+- Filters applied in the spreadsheet do not affect the site. Use the
+  `Published` column to control which opportunities appear.
 
 ## Local development
 
