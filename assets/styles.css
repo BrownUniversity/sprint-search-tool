@@ -3,6 +3,7 @@
   --brown: #4e3629;
   --brown-dark: #332219;
   --red: #c00404;
+  --gold: #ffc72c;
   --cream: #f7f3ef;
   --light-gray: #f4f5f6;
   --medium-gray: #d6d9dc;
@@ -700,4 +701,27 @@ a:focus-visible {
   .program-overview a:hover::after {
     transform: none;
   }
+}
+
+.staging-banner {
+  padding: 0.6rem max(1.25rem, calc((100% - var(--content-width)) / 2));
+  color: var(--text);
+  font-size: 0.95rem;
+  text-align: center;
+  background: var(--gold);
+}
+
+.staging-banner a {
+  margin-left: 0.4rem;
+  font-weight: 700;
+}
+
+.staging-errors {
+  max-width: 52rem;
+  margin: 2.5rem auto;
+  padding: 0 1.25rem;
+}
+
+.staging-errors li {
+  margin-bottom: 0.5rem;
 }

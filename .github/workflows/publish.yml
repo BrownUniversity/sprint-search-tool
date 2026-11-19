@@ -38,6 +38,12 @@ jobs:
       - name: Import and validate Google Sheet
         run: npm run import
 
+      # Staging problems are reported on the staging page and in this run's
+      # summary, but never block publishing the live site.
+      - name: Import Staging tab for the staging preview
+        continue-on-error: true
+        run: npm run import:staging
+
       - name: Run automated tests
         run: npm test
 

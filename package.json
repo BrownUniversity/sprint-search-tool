@@ -6,10 +6,12 @@
   "type": "module",
   "scripts": {
     "import": "node scripts/import-sheet.mjs",
+    "import:staging": "node scripts/import-sheet.mjs --staging",
     "build": "node scripts/build.mjs",
     "test": "node --test",
     "prepare-site": "npm run import && npm test && npm run build",
-    "serve": "python3 -m http.server 8000"
+    "serve": "python3 -m http.server 8000",
+    "serve:dist": "python3 -m http.server 8000 --directory dist"
   },
   "dependencies": {
     "csv-parse": "^6.1.0"

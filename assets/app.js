@@ -47,6 +47,7 @@ async function initialize() {
     state.directory = await response.json();
 
     applySettings();
+    markStaging();
     buildFilters();
     applyFilters();
 
@@ -147,6 +148,12 @@ function attachStaticListeners() {
       .querySelectorAll(".filter-menu[open]")
       .forEach(menu => menu.removeAttribute("open"));
   });
+}
+
+function markStaging() {
+  if (state.directory.environment === "staging") {
+    document.title = `[Staging] ${document.title}`;
+  }
 }
 
 function buildFilters() {
