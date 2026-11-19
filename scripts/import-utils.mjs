@@ -52,6 +52,7 @@ export function createSearchText(opportunity, programName) {
     programName,
     ...opportunity.fields,
     ...opportunity.keywords,
-    ...opportunity.locations
+    ...opportunity.locations,
+    ...opportunity.modalities
   ].join(" "));
 }

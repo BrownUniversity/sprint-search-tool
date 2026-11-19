@@ -7,7 +7,8 @@ import {
   splitList,
   parseBoolean,
   isHttpsUrl,
-  isHexColor
+  isHexColor,
+  createSearchText
 } from "../scripts/import-utils.mjs";
 
 test("clean normalizes whitespace", () => {
@@ -41,4 +42,30 @@ test("isHexColor requires six hexadecimal digits", () => {
   assert.equal(isHexColor("#4E3629"), true);
   assert.equal(isHexColor("#fff"), false);
   assert.equal(isHexColor("brown"), false);
+});
+
+test("createSearchText includes every searchable facet", () => {
+  const text = createSearchText(
+    {
+      organization: "Brown",
+      title: "Research Intern",
+      fields: ["Data Science"],
+      keywords: ["Python"],
+      locations: ["Providence"],
+      modalities: ["Hybrid"]
+    },
+    "UTRA"
+  );
+
+  for (const term of [
+    "brown",
+    "research intern",
+    "utra",
+    "data science",
+    "python",
+    "providence",
+    "hybrid"
+  ]) {
+    assert.ok(text.includes(term), `missing "${term}"`);
+  }
 });

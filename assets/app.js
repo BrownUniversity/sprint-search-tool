@@ -9,6 +9,7 @@ const state = {
   selectedPrograms: new Set(),
   selectedFields: new Set(),
   selectedLocations: new Set(),
+  selectedModalities: new Set(),
   matching: [],
   visibleCount: INITIAL_BATCH_SIZE
 };
@@ -26,6 +27,7 @@ const elements = {
   loadMore: document.querySelector("#load-more"),
   loadAll: document.querySelector("#load-all"),
   locationFilter: document.querySelector("#location-filter"),
+  modalityFilter: document.querySelector("#modality-filter"),
   intro: document.querySelector("#intro"),
   cycleLabel: document.querySelector("#cycle-label"),
   programOverview: document.querySelector("#program-overview"),
@@ -175,6 +177,10 @@ function buildFilters() {
     opportunities.flatMap(opportunity => opportunity.locations)
   );
 
+  const modalities = uniqueSorted(
+    opportunities.flatMap(opportunity => opportunity.modalities)
+  );
+
   renderFilterOptions(
     "program",
     usedPrograms.map(program => ({
@@ -197,16 +203,23 @@ function buildFilters() {
     );
   }
 
-  updateIntroCopy(locations.length > 0);
-}
+  if (modalities.length > 0) {
+    elements.modalityFilter.hidden = false;
 
-function updateIntroCopy(hasLocationFilter) {
-  const facets = ["program", "field", "keyword"];
-
-  if (hasLocationFilter) {
-    facets.push("location");
+    renderFilterOptions(
+      "modality",
+      modalities.map(modality => ({ value: modality, label: modality }))
+    );
   }
 
+  updateIntroCopy([
+    locations.length > 0 && "location",
+    modalities.length > 0 && "modality"
+  ].filter(Boolean));
+}
+
+function updateIntroCopy(optionalFacets) {
+  const facets = ["program", "field", "keyword", ...optionalFacets];
   const lastFacet = facets.pop();
 
   elements.intro.textContent =
@@ -259,7 +272,11 @@ function selectedSetForType(type) {
     return state.selectedFields;
   }
 
-  return state.selectedLocations;
+  if (type === "location") {
+    return state.selectedLocations;
+  }
+
+  return state.selectedModalities;
 }
 
 function updateFilterCount(type) {
@@ -275,6 +292,12 @@ function updateFilterCount(type) {
 function applyFilters() {
   const queryTerms = state.search.split(" ").filter(Boolean);
 
+  // Options are de-duplicated case-insensitively, so match the same way:
+  // choosing "Data Science" must also find rows spelled "Data science".
+  const selectedFields = normalizedSet(state.selectedFields);
+  const selectedLocations = normalizedSet(state.selectedLocations);
+  const selectedModalities = normalizedSet(state.selectedModalities);
+
   state.matching = state.directory.opportunities.filter(opportunity => {
     const matchesSearch = queryTerms.every(term =>
       opportunity.searchText.includes(term)
@@ -285,20 +308,29 @@ function applyFilters() {
       state.selectedPrograms.has(opportunity.programId);
 
     const matchesField =
-      state.selectedFields.size === 0 ||
-      opportunity.fields.some(field => state.selectedFields.has(field));
+      selectedFields.size === 0 ||
+      opportunity.fields.some(field =>
+        selectedFields.has(normalizeText(field))
+      );
 
     const matchesLocation =
-      state.selectedLocations.size === 0 ||
+      selectedLocations.size === 0 ||
       opportunity.locations.some(location =>
-        state.selectedLocations.has(location)
+        selectedLocations.has(normalizeText(location))
+      );
+
+    const matchesModality =
+      selectedModalities.size === 0 ||
+      opportunity.modalities.some(modality =>
+        selectedModalities.has(normalizeText(modality))
       );
 
     return (
       matchesSearch &&
       matchesProgram &&
       matchesField &&
-      matchesLocation
+      matchesLocation &&
+      matchesModality
     );
   });
 
@@ -420,6 +452,14 @@ function createOpportunityCard(opportunity) {
     body.append(locations);
   }
 
+  if (opportunity.modalities.length > 0) {
+    const modalities = document.createElement("p");
+    modalities.className = "modality-list";
+    modalities.textContent =
+      `Modality: ${opportunity.modalities.join(", ")}`;
+    body.append(modalities);
+  }
+
   const tags = uniqueCaseInsensitive([
     ...opportunity.fields,
     ...opportunity.keywords
@@ -485,6 +525,7 @@ function clearAll() {
   state.selectedPrograms.clear();
   state.selectedFields.clear();
   state.selectedLocations.clear();
+  state.selectedModalities.clear();
   elements.search.value = "";
 
   document
@@ -493,7 +534,7 @@ function clearAll() {
       input.checked = false;
     });
 
-  ["program", "field", "location"].forEach(updateFilterCount);
+  ["program", "field", "location", "modality"].forEach(updateFilterCount);
 
   document
     .querySelectorAll(".filter-menu[open]")
@@ -509,13 +550,18 @@ function updateClearButton() {
     state.search.length > 0 ||
     state.selectedPrograms.size > 0 ||
     state.selectedFields.size > 0 ||
-    state.selectedLocations.size > 0;
+    state.selectedLocations.size > 0 ||
+    state.selectedModalities.size > 0;
 
   elements.clear.disabled = !hasFilters;
 }
 
 function resetVisibleCount() {
   state.visibleCount = INITIAL_BATCH_SIZE;
+}
+
+function normalizedSet(values) {
+  return new Set([...values].map(normalizeText));
 }
 
 function uniqueSorted(values) {

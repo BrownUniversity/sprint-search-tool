@@ -413,7 +413,8 @@ a:focus-visible {
   font-weight: 700;
 }
 
-.location-list {
+.location-list,
+.modality-list {
   margin-bottom: 0.8rem;
   color: var(--dark-gray);
   font-size: 0.9rem;
@@ -592,7 +593,8 @@ a:focus-visible {
   text-align: center;
 }
 
-.location-list {
+.location-list,
+.modality-list {
   text-align: center;
 }
 
