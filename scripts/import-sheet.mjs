@@ -51,7 +51,8 @@ try {
     "Link",
     "Field/Industry",
     "Keywords",
-    "Location"
+    "Location",
+    "Modality"
   ]);
 
   requireHeaders("Programs", programRows, [
@@ -347,6 +348,7 @@ function parseOpportunities(rows, programMap) {
     const fields = splitList(row["Field/Industry"]);
     const keywords = splitList(row.Keywords);
     const locations = splitList(row.Location);
+    const modalities = splitList(row.Modality);
 
     requiredValue("Opportunities", rowNumber, "ID", id);
     requiredValue(
@@ -417,7 +419,8 @@ function parseOpportunities(rows, programMap) {
       url,
       fields,
       keywords,
-      locations
+      locations,
+      modalities
     };
 
     opportunity.searchText = createSearchText(
