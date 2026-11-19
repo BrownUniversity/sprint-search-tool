@@ -4,3 +4,4 @@ dist/
 *.log
 data/directory.json
 data/publication-report.md
+data/staging/

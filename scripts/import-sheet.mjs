@@ -18,12 +18,23 @@ const SHEET_ID = "1ks63ew54RtEUyghnSu4DJIZTxqrikgkldc32qbmToyo";
 // its gid here.
 const SHEET_GIDS = {
   opportunities: "0",
+  stagingOpportunities: "1009897759",
   programs: "716082224",
   settings: "1917967801"
 };
 
+// `npm run import:staging` builds the staging preview from the Staging tab.
+// Programs and Settings are shared with the live site.
+const isStaging = process.argv.includes("--staging");
+const OPPORTUNITIES_TAB = isStaging ? "Staging" : "Opportunities";
+const DATA_DIR = isStaging ? "data/staging" : "data";
+const DIRECTORY_PATH = `${DATA_DIR}/directory.json`;
+const REPORT_PATH = `${DATA_DIR}/publication-report.md`;
+
 const urls = {
-  opportunities: sheetCsvUrl(SHEET_GIDS.opportunities),
+  opportunities: sheetCsvUrl(
+    isStaging ? SHEET_GIDS.stagingOpportunities : SHEET_GIDS.opportunities
+  ),
   programs: sheetCsvUrl(SHEET_GIDS.programs),
   settings: sheetCsvUrl(SHEET_GIDS.settings)
 };
@@ -37,12 +48,12 @@ try {
     programRows,
     settingsRows
   ] = await Promise.all([
-    fetchSheet(urls.opportunities, "Opportunities"),
+    fetchSheet(urls.opportunities, OPPORTUNITIES_TAB),
     fetchSheet(urls.programs, "Programs"),
     fetchSheet(urls.settings, "Settings")
   ]);
 
-  requireHeaders("Opportunities", opportunityRows, [
+  requireHeaders(OPPORTUNITIES_TAB, opportunityRows, [
     "ID",
     "Published",
     "Organization",
@@ -75,6 +86,7 @@ try {
 
   const output = {
     generatedAt: new Date().toISOString(),
+    environment: isStaging ? "staging" : "production",
     source: "SPRINT Opportunity Directory Source",
     opportunityCount: opportunities.length,
     settings,
@@ -82,15 +94,16 @@ try {
     programs
   };
 
-  await fs.mkdir("data", { recursive: true });
+  await fs.mkdir(DATA_DIR, { recursive: true });
   await writeReport();
 
   if (errors.length > 0) {
+    await discardStagingData();
     printSummary(opportunities.length);
     process.exitCode = 1;
   } else {
     await fs.writeFile(
-      "data/directory.json",
+      DIRECTORY_PATH,
       `${JSON.stringify(output, null, 2)}\n`,
       "utf8"
     );
@@ -105,10 +118,19 @@ try {
     message: error.message
   });
 
-  await fs.mkdir("data", { recursive: true });
+  await fs.mkdir(DATA_DIR, { recursive: true });
   await writeReport();
+  await discardStagingData();
   printSummary(0);
   process.exitCode = 1;
+}
+
+// A failed staging import must not leave an older preview in place: the
+// build shows the error report on the staging page when no data exists.
+async function discardStagingData() {
+  if (isStaging) {
+    await fs.rm(DIRECTORY_PATH, { force: true });
+  }
 }
 
 // The export endpoint returns every row. The gviz endpoint used previously
@@ -348,30 +370,30 @@ function parseOpportunities(rows, programMap) {
     const keywords = splitList(row.Keywords);
     const locations = splitList(row.Location);
 
-    requiredValue("Opportunities", rowNumber, "ID", id);
+    requiredValue(OPPORTUNITIES_TAB, rowNumber, "ID", id);
     requiredValue(
-      "Opportunities",
+      OPPORTUNITIES_TAB,
       rowNumber,
       "Organization",
       organization
     );
     requiredValue(
-      "Opportunities",
+      OPPORTUNITIES_TAB,
       rowNumber,
       "Position/Project",
       title
     );
     requiredValue(
-      "Opportunities",
+      OPPORTUNITIES_TAB,
       rowNumber,
       "Program ID",
       programId
     );
-    requiredValue("Opportunities", rowNumber, "Link", url);
+    requiredValue(OPPORTUNITIES_TAB, rowNumber, "Link", url);
 
     if (id && ids.has(id)) {
       addError(
-        "Opportunities",
+        OPPORTUNITIES_TAB,
         rowNumber,
         "ID",
         `Duplicate opportunity ID "${id}".`
@@ -382,7 +404,7 @@ function parseOpportunities(rows, programMap) {
 
     if (url && !isHttpsUrl(url)) {
       addError(
-        "Opportunities",
+        OPPORTUNITIES_TAB,
         rowNumber,
         "Link",
         "Opportunity links must use HTTPS."
@@ -393,7 +415,7 @@ function parseOpportunities(rows, programMap) {
 
     if (programId && !program) {
       addError(
-        "Opportunities",
+        OPPORTUNITIES_TAB,
         rowNumber,
         "Program ID",
         `Unknown Program ID "${programId}".`
@@ -402,7 +424,7 @@ function parseOpportunities(rows, programMap) {
 
     if (fields.length === 0 && keywords.length === 0) {
       addWarning(
-        "Opportunities",
+        OPPORTUNITIES_TAB,
         rowNumber,
         "Field/Industry",
         "Opportunity has no fields or keywords."
@@ -430,7 +452,7 @@ function parseOpportunities(rows, programMap) {
 
   if (opportunities.length === 0) {
     addError(
-      "Opportunities",
+      OPPORTUNITIES_TAB,
       null,
       null,
       "No published opportunities were found."
@@ -474,7 +496,7 @@ function addWarning(sheet, row, field, message) {
 
 async function writeReport() {
   const lines = [
-    "# SPRINT directory publication report",
+    `# SPRINT ${isStaging ? "staging " : ""}directory publication report`,
     "",
     `Generated: ${new Date().toISOString()}`,
     "",
@@ -508,7 +530,7 @@ async function writeReport() {
   }
 
   await fs.writeFile(
-    "data/publication-report.md",
+    REPORT_PATH,
     `${lines.join("\n")}\n`,
     "utf8"
   );
@@ -534,7 +556,7 @@ function formatIssue(item) {
 
 function printSummary(opportunityCount) {
   console.log("");
-  console.log("SPRINT directory import");
+  console.log(`SPRINT ${isStaging ? "staging " : ""}directory import`);
   console.log(`Published opportunities: ${opportunityCount}`);
   console.log(`Errors: ${errors.length}`);
   console.log(`Warnings: ${warnings.length}`);

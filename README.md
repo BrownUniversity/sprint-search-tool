@@ -45,6 +45,27 @@ The site publishes:
 
 GitHub scheduled workflows may run later than their exact scheduled time.
 
+## Staging preview
+
+Each publish also builds a preview at `/staging/` on the same site from the
+spreadsheet's Staging tab, so changes can be checked before they go live.
+Programs and Settings are shared with the live site.
+
+- The preview has a "Staging preview" banner, a `[Staging]` tab title, and
+  asks search engines not to index it.
+- Staging problems never block the live site. If the Staging tab fails
+  validation, the staging page lists the errors instead.
+
+To build the preview locally:
+
+```bash
+npm run import:staging
+npm run build
+npm run serve:dist
+```
+
+Then open <http://localhost:8000/staging/>.
+
 ## Data validation
 
 Publication is blocked when required data is invalid. A failed build does not
